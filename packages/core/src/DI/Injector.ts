@@ -147,6 +147,10 @@ export class Injector {
         }
     }
 
+    append(dependencies: Dependency[]): void {
+        this.dependencyCollection.append(dependencies);
+    }
+
     /**
      * delete a dependency and instantiated values from an injector
      */

@@ -3,6 +3,7 @@ import { Context } from '../Basics/Context';
 import { Observable } from '../Observer';
 import { Locale, Nullable, PropsFrom } from '../Shared';
 import { Univer } from '../Basics';
+import { Injector } from '../DI';
 
 /**
  * Basics function of plugin
@@ -29,12 +30,22 @@ export interface BasePlugin {
     load<T>(data: T): void;
 }
 
+export enum UniverPluginType {
+    UNIVER,
+    DOC,
+    SHEET,
+    SLIDE,
+}
+
 /**
  * Plug-in base class, all plug-ins must inherit from this base class. provides the basic method
  */
 export abstract class Plugin<Obs = any, O extends ContextBase = ContextBase>
     implements BasePlugin
 {
+    static type: UniverPluginType;
+
+    /** @deprecated do not use this anymore */
     context: O;
 
     private _name: string;

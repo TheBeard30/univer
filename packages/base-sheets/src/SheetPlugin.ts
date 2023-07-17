@@ -1,5 +1,5 @@
 import { Engine, RenderEngine } from '@univerjs/base-render';
-import { SheetContext, Plugin, PLUGIN_NAMES, DEFAULT_SELECTION, UniverSheet, UIObserver, Injector, Inject, Dependency } from '@univerjs/core';
+import { SheetContext, Plugin, PLUGIN_NAMES, DEFAULT_SELECTION, UniverSheet, UIObserver, Injector, Inject, Dependency, UniverPluginType } from '@univerjs/core';
 
 import { SheetPluginObserve, uninstall } from './Basics/Observer';
 import { CANVAS_VIEW_KEY } from './View/BaseView';
@@ -30,6 +30,8 @@ import { HideColumnRulerFactory } from './Basics/Register/HideColumnRuler';
  * The main sheet base, construct the sheet container and layout, mount the rendering engine
  */
 export class SheetPlugin extends Plugin<SheetPluginObserve, SheetContext> {
+    static override type = UniverPluginType.SHEET;
+
     private _injector: Injector;
 
     private _config: ISheetPluginConfig;
@@ -62,20 +64,22 @@ export class SheetPlugin extends Plugin<SheetPluginObserve, SheetContext> {
 
     private _hideColumnRulerFactory: HideColumnRulerFactory;
 
-    constructor(config?: Partial<ISheetPluginConfig>,
-        @Inject(Injector) parentInjector?: Injector) {
+    constructor(
+        config?: Partial<ISheetPluginConfig>,
+        @Inject(Injector) sheetInjector?: Injector
+    ) {
         super(PLUGIN_NAMES.SPREADSHEET);
 
         this._config = Object.assign(DEFAULT_SPREADSHEET_PLUGIN_DATA, config);
 
-        this._injector = this.initializeDependencies(parentInjector);
+        this.registerDependencies(sheetInjector || new Injector());
     }
 
     static create(config?: Partial<ISheetPluginConfig>) {
         return new SheetPlugin(config);
     }
-
     installTo(universheetInstance: UniverSheet) {
+
         universheetInstance.installPlugin(this);
     }
 
@@ -268,19 +272,21 @@ export class SheetPlugin extends Plugin<SheetPluginObserve, SheetContext> {
         return this.getGlobalContext().getObserverManager().requiredObserver<UIObserver<T>>(type, 'core');
     }
 
-    private initializeDependencies(parentInjector?: Injector): Injector {
+    private registerDependencies(sheetInjector: Injector): void {
         const self = this;
 
         const dependencies: Dependency[] = [
+            // TODO: @huwenzhao: some dependency here should be moved to Univer or UniverSheet
             [IGlobalContext, { useFactory: () => this.getGlobalContext() }],
             [ISheetContext, { useFactory: () => this.getContext() }],
+            // TODO: @huwenzhao: this should be exposed from RenderEngine plugin as a service
             [IRenderingEngine, { useFactory: (renderEngine: RenderEngine) => renderEngine.getEngine(), deps: [RenderEngine] }],
             [ISheetPlugin, { useValue: self }],
 
             // Rendering Module
             [CanvasView],
-
             // #region Controllers
+
             [CellEditorController],
             [SheetContainerController],
             [FormulaBarController],
@@ -310,6 +316,8 @@ export class SheetPlugin extends Plugin<SheetPluginObserve, SheetContext> {
         ];
 
 
-        return parentInjector?.createChild(dependencies) || new Injector(dependencies);
+        sheetInjector.append(dependencies);
+
+        this._injector = sheetInjector;
     }
 }

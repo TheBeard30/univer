@@ -4,7 +4,7 @@ import { BasePlugin, Plugin } from '../Plugin';
 import { IOHttp, IOHttpConfig, Logger } from '../Shared';
 import { SheetContext } from './SheetContext';
 import { VersionCode, VersionEnv } from './Version';
-import { Dependency, Injector, Inject, Ctor } from '../DI';
+import { Dependency, Injector, Inject, Ctor, IDisposable } from '../DI';
 
 interface IComposedConfig {
     [key: string]: any;
@@ -25,12 +25,12 @@ export class UniverSheet {
 
     constructor(
         univerSheetData: Partial<IWorkbookConfig> = {},
-        @Inject(Injector) parentInjector?: Injector,
+        @Inject(Injector) univerInjector?: Injector,
     ) {
         this.univerSheetConfig = univerSheetData;
         this._context = new SheetContext(univerSheetData);
 
-        this._sheetInjector = this.initInjector(parentInjector);
+        this._sheetInjector = this.initInjector(univerInjector);
     }
 
     /**
@@ -129,9 +129,10 @@ export class UniverSheet {
         this._context.getPluginManager().install(plugin);
     }
 
-    installPluginCtor<T>(pluginCtor: Ctor<T>): T {
+    installPluginCtor<T extends Plugin>(pluginCtor: Ctor<T>): T {
         const plugin = this._sheetInjector.createInstance(pluginCtor);
 
+        // TODO: @huwenzhao: this will be removed eventually
         this._context.getPluginManager().install(plugin); // this line would be removed in the future
 
         // TODO: we should provide a register method such as `registerPlugin` because users have to manually decide instantiation process using this API
@@ -152,6 +153,8 @@ export class UniverSheet {
     /**
      * get WorkBook
      *
+     * @deprecated get from WookbookManagerService
+     *
      * @returns Workbook
      */
     getWorkBook(): Workbook {
@@ -167,18 +170,24 @@ export class UniverSheet {
      */
     private initInjector(parentInjector?: Injector): Injector {
         const univerSheetDependencies: Dependency[] = [
-            [WorkbookManager, { useFactory: () => new WorkbookManager(this._context.getWorkBook()) }],
+            [WorkbookManagerService, { useFactory: () => new WorkbookManagerService(this._context.getWorkBook()) }],
         ];
 
         return parentInjector?.createChild(univerSheetDependencies) || new Injector(univerSheetDependencies);
     }
-}
 
+}
 /**
  * Get current workbook and others
+ *
+ * This is exposed as a service on the univer sheet layer
  */
-export class WorkbookManager {
+export class WorkbookManagerService implements IDisposable {
     constructor(private readonly _workbook: Workbook) {
+
+    }
+
+    dispose(): void {
 
     }
 
