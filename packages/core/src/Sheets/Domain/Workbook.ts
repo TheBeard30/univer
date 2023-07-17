@@ -101,7 +101,8 @@ export class Workbook {
         return typeof range === 'string' || 'startRow' in range || 'row' in range;
     }
 
-    onUniver(univer: Univer) {
+    /** @deprecated this method should be removed */
+    onUniver() {
         this._getDefaultWorkSheet();
     }
 

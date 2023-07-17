@@ -1,9 +1,10 @@
-import { Workbook, ColorBuilder } from '../Sheets/Domain';
+import { Workbook, ColorBuilder, Worksheet } from '../Sheets/Domain';
 import { IWorkbookConfig } from '../Interfaces';
 import { BasePlugin, Plugin } from '../Plugin';
 import { IOHttp, IOHttpConfig, Logger } from '../Shared';
 import { SheetContext } from './SheetContext';
 import { VersionCode, VersionEnv } from './Version';
+import { Dependency, Injector, Inject, Ctor } from '../DI';
 
 interface IComposedConfig {
     [key: string]: any;
@@ -15,17 +16,27 @@ interface IComposedConfig {
  * Externally provided UniverSheet root instance
  */
 export class UniverSheet {
+    private readonly _sheetInjector: Injector;
+
     univerSheetConfig: Partial<IWorkbookConfig>;
 
+    /** @deprecated */
     private _context: SheetContext;
 
-    constructor(univerSheetData: Partial<IWorkbookConfig> = {}) {
+    constructor(
+        univerSheetData: Partial<IWorkbookConfig> = {},
+        @Inject(Injector) parentInjector?: Injector,
+    ) {
         this.univerSheetConfig = univerSheetData;
         this._context = new SheetContext(univerSheetData);
+
+        this._sheetInjector = this.initInjector(parentInjector);
     }
 
     /**
      * get SheetContext
+     *
+     * @deprecated
      */
     get context() {
         return this._context;
@@ -112,9 +123,21 @@ export class UniverSheet {
      * install plugin
      *
      * @param plugin - install plugin
+     * @deprecated use `installPluginCtor` instead
      */
     installPlugin(plugin: Plugin): void {
         this._context.getPluginManager().install(plugin);
+    }
+
+    installPluginCtor<T>(pluginCtor: Ctor<T>): T {
+        const plugin = this._sheetInjector.createInstance(pluginCtor);
+
+        this._context.getPluginManager().install(plugin); // this line would be removed in the future
+
+        // TODO: we should provide a register method such as `registerPlugin` because users have to manually decide instantiation process using this API
+        this._sheetInjector.add(pluginCtor, plugin);
+
+        return plugin;
     }
 
     /**
@@ -137,5 +160,33 @@ export class UniverSheet {
 
     refreshWorkbook(univerSheetData: Partial<IWorkbookConfig> = {}) {
         this._context.refreshWorkbook(univerSheetData);
+    }
+
+    /**
+     * Create worksheet level injector
+     */
+    private initInjector(parentInjector?: Injector): Injector {
+        const univerSheetDependencies: Dependency[] = [
+            [WorkbookManager, { useFactory: () => new WorkbookManager(this._context.getWorkBook()) }],
+        ];
+
+        return parentInjector?.createChild(univerSheetDependencies) || new Injector(univerSheetDependencies);
+    }
+}
+
+/**
+ * Get current workbook and others
+ */
+export class WorkbookManager {
+    constructor(private readonly _workbook: Workbook) {
+
+    }
+
+    getWorkbook(): Workbook {
+        return this._workbook;
+    }
+
+    getActiveWorksheet(): Worksheet {
+        return this._workbook.getActiveSheet();
     }
 }

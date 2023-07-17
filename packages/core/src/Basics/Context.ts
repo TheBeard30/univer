@@ -5,6 +5,8 @@ import { ContextBase } from './ContextBase';
 
 /**
  * univer context
+ *
+ * @deprecated this should be removed finally
  */
 export class Context extends ContextBase {
     protected _locale: Locale;

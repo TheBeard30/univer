@@ -10,46 +10,19 @@ import { FindPlugin } from '@univerjs/sheets-plugin-find';
 import { DEFAULT_FORMULA_DATA_DEMO, FormulaPlugin } from '@univerjs/sheets-plugin-formula';
 import { NumfmtPlugin } from '@univerjs/sheets-plugin-numfmt';
 
-const uiDefaultConfigDemo = {
-    container: 'universheet',
-    selections: {
-        'sheet-0001': [
-            {
-                selection: {
-                    startRow: 2,
-                    endRow: 2,
-                    startColumn: 3,
-                    endColumn: 3,
-                },
-                cell: {
-                    row: 2,
-                    column: 3,
-                },
-            },
-        ],
-    },
-};
-
-const sheetUIConfig = {
-    container: 'universheet',
-};
-
 // univer
 const univer = new Univer({
     locale: LocaleType.EN,
 });
 
 // base-render
-univer.install(new RenderEngine());
+univer.installPluginCtor(RenderEngine);
 
 // universheet instance
-const universheet = UniverSheet.newInstance(DEFAULT_WORKBOOK_DATA_DEMO);
-// sheet.installPlugin(new RenderEngine());
-univer.addUniverSheet(universheet);
-// base-sheet
-universheet.installPlugin(new SheetPlugin());
+const universheet = univer.createUniverSheet(DEFAULT_WORKBOOK_DATA_DEMO);
 
-// universheet.installPlugin(new FormulaPlugin(DEFAULT_FORMULA_DATA_DEMO));
+// base-sheet
+universheet.installPluginCtor(SheetPlugin);
 
 // ui-plugin-sheets
 univer.install(
@@ -70,10 +43,11 @@ univer.install(
 
 FormulaPlugin.create(DEFAULT_FORMULA_DATA_DEMO).installTo(universheet);
 FindPlugin.create().installTo(universheet);
-universheet.installPlugin(new OperationPlugin());
-universheet.installPlugin(new ImportXlsxPlugin());
-universheet.installPlugin(new OverGridImagePlugin());
-universheet.installPlugin(new NumfmtPlugin());
+
+universheet.installPluginCtor(OperationPlugin);
+universheet.installPluginCtor(ImportXlsxPlugin);
+universheet.installPluginCtor(OverGridImagePlugin);
+universheet.installPluginCtor(NumfmtPlugin);
 
 // use for console test
 declare global {
@@ -81,4 +55,5 @@ declare global {
         univer?: any;
     }
 }
+
 window.univer = univer;

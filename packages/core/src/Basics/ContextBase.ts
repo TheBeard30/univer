@@ -9,6 +9,8 @@ import { Environment } from './Environment';
 
 /**
  * Core context, mount important instances, managers
+ *
+ * @deprecated would be removed, use DI instead of this
  */
 export abstract class ContextBase {
     protected _commandManager: CommandManager;
@@ -33,6 +35,7 @@ export abstract class ContextBase {
         this._initialize();
     }
 
+    /** @deprecated this method should be removed */
     onUniver(univer: Univer): void {
         const globalContext = univer.getGlobalContext();
         this._univer = univer;
@@ -60,8 +63,8 @@ export abstract class ContextBase {
     /** @deprecated DI */
     getUndoManager(): UndoManager {
         return this._undoManager;
-    }
 
+    }
     /** @deprecated DI */
     getCommandManager(): CommandManager {
         return this._commandManager;

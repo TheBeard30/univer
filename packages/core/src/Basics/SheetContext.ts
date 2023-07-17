@@ -9,6 +9,8 @@ import { IWorkbookConfig } from '../Interfaces';
 
 /**
  * Core context, mount important instances, managers
+ *
+ * @deprecated this class should be removed, use DI instead
  */
 export class SheetContext extends ContextBase {
     protected _workbook: Workbook;
@@ -30,9 +32,11 @@ export class SheetContext extends ContextBase {
         return this._genname;
     }
 
+    /** @deprecated this method should be removed */
     onUniver(univer: Univer) {
         super.onUniver(univer);
-        this._workbook.onUniver(univer);
+
+        this._workbook.onUniver();
     }
 
     getContextObserver<Key extends keyof WorkBookObserver>(
@@ -53,4 +57,11 @@ export class SheetContext extends ContextBase {
     protected _initialize(): void {
         // EMPTY Context Initialize
     }
+}
+
+/**
+ * The service to get the active workbook and worksheet instance.
+ */
+export class WorkbookService {
+
 }

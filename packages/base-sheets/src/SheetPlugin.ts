@@ -1,5 +1,5 @@
 import { Engine, RenderEngine } from '@univerjs/base-render';
-import { SheetContext, Plugin, PLUGIN_NAMES, DEFAULT_SELECTION, UniverSheet, UIObserver, Injector } from '@univerjs/core';
+import { SheetContext, Plugin, PLUGIN_NAMES, DEFAULT_SELECTION, UniverSheet, UIObserver, Injector, Inject, Dependency } from '@univerjs/core';
 
 import { SheetPluginObserve, uninstall } from './Basics/Observer';
 import { CANVAS_VIEW_KEY } from './View/BaseView';
@@ -62,12 +62,13 @@ export class SheetPlugin extends Plugin<SheetPluginObserve, SheetContext> {
 
     private _hideColumnRulerFactory: HideColumnRulerFactory;
 
-    constructor(config?: Partial<ISheetPluginConfig>) {
+    constructor(config?: Partial<ISheetPluginConfig>,
+        @Inject(Injector) parentInjector?: Injector) {
         super(PLUGIN_NAMES.SPREADSHEET);
 
         this._config = Object.assign(DEFAULT_SPREADSHEET_PLUGIN_DATA, config);
 
-        this.initializeDependencies();
+        this._injector = this.initializeDependencies(parentInjector);
     }
 
     static create(config?: Partial<ISheetPluginConfig>) {
@@ -267,13 +268,13 @@ export class SheetPlugin extends Plugin<SheetPluginObserve, SheetContext> {
         return this.getGlobalContext().getObserverManager().requiredObserver<UIObserver<T>>(type, 'core');
     }
 
-    private initializeDependencies() {
+    private initializeDependencies(parentInjector?: Injector): Injector {
         const self = this;
 
-        this._injector = new Injector([
+        const dependencies: Dependency[] = [
             [IGlobalContext, { useFactory: () => this.getGlobalContext() }],
             [ISheetContext, { useFactory: () => this.getContext() }],
-            [IRenderingEngine, { useFactory: () => this.getGlobalContext().getPluginManager().getRequirePluginByName<RenderEngine>(PLUGIN_NAMES.BASE_RENDER).getEngine() }],
+            [IRenderingEngine, { useFactory: (renderEngine: RenderEngine) => renderEngine.getEngine(), deps: [RenderEngine] }],
             [ISheetPlugin, { useValue: self }],
 
             // Rendering Module
@@ -306,6 +307,9 @@ export class SheetPlugin extends Plugin<SheetPluginObserve, SheetContext> {
             // RulerManager
             [ColumnRulerManager],
             // #endregion Controllers
-        ]);
+        ];
+
+
+        return parentInjector?.createChild(dependencies) || new Injector(dependencies);
     }
 }
